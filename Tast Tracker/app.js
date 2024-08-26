@@ -1,25 +1,25 @@
 const fs = require('fs');
 const path = './tasks.json';
 
-// Ensure the JSON file exists
+// Crear el archivo JSON si no existe
 async function createFileIfNotExists(filePath) {
     if (!fs.existsSync(filePath)) {
         fs.writeFileSync(filePath, JSON.stringify([]));
     }
 }
 
-// Read tasks from the JSON file
+// Leer las tareas del archivo JSON
 async function readTasks(filePath) {
     const data = fs.readFileSync(filePath);
     return JSON.parse(data);
 }
 
-// Write tasks to the JSON file
+// Tareas escritas en el archivo JSON
 async function writeTasks(filePath, tasks) {
     fs.writeFileSync(filePath, JSON.stringify(tasks, null, 2));
 }
 
-// Add a new task
+// Adicionar una tarea
 async function addTask(filePath, description) {
     const tasks = await readTasks(filePath);
     const newTask = {
@@ -32,7 +32,7 @@ async function addTask(filePath, description) {
     console.log('Task added:', newTask);
 }
 
-// Update a task
+// Actualizar una tarea
 async function updateTask(filePath, id, description, status) {
     const tasks = await readTasks(filePath);
     const task = tasks.find(t => t.id === id);
@@ -46,7 +46,7 @@ async function updateTask(filePath, id, description, status) {
     }
 }
 
-// Delete a task
+// eliminar una tarea
 async function deleteTask(filePath, id) {
     let tasks = await readTasks(filePath);
     tasks = tasks.filter(t => t.id !== id);
@@ -54,14 +54,14 @@ async function deleteTask(filePath, id) {
     console.log('Task deleted');
 }
 
-// List tasks
+// Lista de tareas
 async function listTasks(filePath, status = null) {
     const tasks = await readTasks(filePath);
     const filteredTasks = status ? tasks.filter(t => t.status === status) : tasks;
     console.log(filteredTasks);
 }
 
-// Main function to handle commands
+// Comando para adicionar uma nueva tarea
 async function main() {
     await createFileIfNotExists(path);
 
