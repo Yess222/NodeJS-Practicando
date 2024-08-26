@@ -1,140 +1,98 @@
-const fs = require('fs/promises');
-const path = 'data.json';
-// Verificar si el archivo existe, si no, crearlo
-async function createFileIfNotExists(path){
-    try{
-        await fs.access(path);
-    } catch{
-        await fs.writeFile(path, '[]');
+const fs = require('fs');
+const path = './tasks.json';
+
+// Ensure the JSON file exists
+async function createFileIfNotExists(filePath) {
+    if (!fs.existsSync(filePath)) {
+        fs.writeFileSync(filePath, JSON.stringify([]));
     }
 }
 
-// Leer datos de un archivo JSON
-async function readData(path){
-    try{
-        const fileContent = await fs.readFile(path, 'utf-8');
-        const allData = JSON.parse(fileContent);
-        console.log(allData);
-
-    }catch(err){
-        console.log(err);
-    }
+// Read tasks from the JSON file
+async function readTasks(filePath) {
+    const data = fs.readFileSync(filePath);
+    return JSON.parse(data);
 }
 
-// Agregar datos a un archivo JSON
-async function readAndAddData(path,data){
-    try{
-        const fileContent = await fs.readFile(path, 'utf-8');
-        const allData = JSON.parse(fileContent);
-        const newId = allData.length ? allData[allData.length - 1].id + 1 : 1;
-        data.id = newId;
-        
-        const newData = {
-            id: newId,
-            name: data.name,
-            age: data.age
-        };
-        
-
-        allData.push(newData);
-        await fs.writeFile(path, JSON.stringify(allData, null, 2));
-
-
-        console.log('Se agregó un nuevo dato');
-    }catch(err){
-        console.log(err);
-    }
-};
-
-// Actualizar datos de un archivo JSON
-async function updateData(path,id,data){
-    try{
-        const { name, age } = data;
-        
-        const fileContent = await fs.readFile(path, 'utf-8');
-        const allData = JSON.parse(fileContent);
-        const index = allData.findIndex((item) => item.id === id);
-        
-        const updateData = {
-            id: id,
-            name: name,
-            age: age
-        };
-
-        if(index !== -1){
-            allData[index] = updateData;
-            await fs.writeFile(path, JSON.stringify(allData, null, 2));
-            console.log('Se actualizó el dato');
-            console.log(allData);
-        }else{
-            console.log('No se encontró el dato');
-        }
-
-    }catch(err){
-        console.log(err);
-    }
+// Write tasks to the JSON file
+async function writeTasks(filePath, tasks) {
+    fs.writeFileSync(filePath, JSON.stringify(tasks, null, 2));
 }
 
-// Eliminar datos de un archivo JSON
-async function deleteData(path,id){
-    try{
-        const fileContent = await fs.readFile(path, 'utf-8');
-        let allData = JSON.parse(fileContent);
-        const index = allData.findIndex((item) => item.id === id);
-        
-        if(index !== -1){
-
-            allData.splice(index, 1);
-
-            await fs.writeFile(path, JSON.stringify(allData, null, 2));
-            console.log('Se eliminó el dato');
-            console.log(allData);
-        }else{
-            console.log('No se encontró el dato');
-        }
-
-    }catch(err){
-        console.log(err);
-    }
-}
-
-// Llamar a las funciones
-async function main(){
-
-    const commands = {
-        create: async () => {
-            const newData = {
-                name: process.argv[3],
-                age: parseInt(process.argv[4])
-            };
-            await createFileIfNotExists(path);
-            await readAndAddData(path, newData);
-        },
-        read: async () => {
-            await createFileIfNotExists(path);
-            await readData(path);
-        },
-        update: async () => {
-            const newDataUpdate = {
-                name: process.argv[4],
-                age: parseInt(process.argv[5])
-            };
-            await createFileIfNotExists(path);
-            await updateData(path, parseInt(process.argv[3]), newDataUpdate);
-        },
-        delete: async () => {
-            await createFileIfNotExists(path);
-            await deleteData(path, parseInt(process.argv[3]));
-        }
+// Add a new task
+async function addTask(filePath, description) {
+    const tasks = await readTasks(filePath);
+    const newTask = {
+        id: tasks.length + 1,
+        description,
+        status: 'todo'
     };
-    
-    const command = process.argv[2];
-    if (commands[command]) {
-        commands[command]();
+    tasks.push(newTask);
+    await writeTasks(filePath, tasks);
+    console.log('Task added:', newTask);
+}
+
+// Update a task
+async function updateTask(filePath, id, description, status) {
+    const tasks = await readTasks(filePath);
+    const task = tasks.find(t => t.id === id);
+    if (task) {
+        task.description = description || task.description;
+        task.status = status || task.status;
+        await writeTasks(filePath, tasks);
+        console.log('Task updated:', task);
     } else {
-        console.log('Comando no reconocido');
+        console.log('Task not found');
     }
 }
 
+// Delete a task
+async function deleteTask(filePath, id) {
+    let tasks = await readTasks(filePath);
+    tasks = tasks.filter(t => t.id !== id);
+    await writeTasks(filePath, tasks);
+    console.log('Task deleted');
+}
+
+// List tasks
+async function listTasks(filePath, status = null) {
+    const tasks = await readTasks(filePath);
+    const filteredTasks = status ? tasks.filter(t => t.status === status) : tasks;
+    console.log(filteredTasks);
+}
+
+// Main function to handle commands
+async function main() {
+    await createFileIfNotExists(path);
+
+    const command = process.argv[2];
+    const args = process.argv.slice(3);
+
+    switch (command) {
+        case 'add':
+            await addTask(path, args[0]);
+            break;
+        case 'update':
+            await updateTask(path, parseInt(args[0]), args[1], args[2]);
+            break;
+        case 'delete':
+            await deleteTask(path, parseInt(args[0]));
+            break;
+        case 'list':
+            await listTasks(path);
+            break;
+        case 'list-done':
+            await listTasks(path, 'done');
+            break;
+        case 'list-not-done':
+            await listTasks(path, 'todo');
+            break;
+        case 'list-in-progress':
+            await listTasks(path, 'in-progress');
+            break;
+        default:
+            console.log('Unknown command');
+    }
+}
 
 main();
