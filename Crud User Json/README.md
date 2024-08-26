@@ -1,4 +1,4 @@
-# CRUD User JSON <a href="https://roadmap.sh/projects/task-tracker">link</a>
+# CRUD User JSON
 
 Este proyecto es una aplicación de línea de comandos para gestionar datos en un archivo JSON. Permite crear, leer, actualizar y eliminar datos de manera sencilla. El propósito de este proyecto es aprender más sobre el backend utilizando Node.js.
 
